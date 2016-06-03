@@ -200,34 +200,12 @@ def _create_linter(klass, options):
         else:
             # Prevent people from accidentally defining `process_output`
             # manually, as this would implicitly override the internally
-            # set-up `process_output`.
+            # set-up `process_output` from the format-class mixin.
             if hasattr(klass, "process_output"):
                 raise ValueError("Found `process_output` already defined "
                                  "by class {!r}, but {!r} output-format is "
                                  "specified.".format(klass.__name__,
                                                      options["output_format"]))
-
-            if options["output_format"] == "corrected":
-                process_output_args = {
-                    key: options[key]
-                    for key in ("result_message", "diff_severity",
-                                "diff_distance")
-                    if key in options}
-
-                process_output = partialmethod(
-                    process_output_corrected, **process_output_args)
-
-            else:
-                assert options["output_format"] == "regex"
-
-                process_output_args = {
-                    key: options[key]
-                    for key in ("output_regex", "severity_map",
-                                "result_message")
-                    if key in options}
-
-                process_output = partialmethod(
-                    process_output_regex, **process_output_args)
 
         @classmethod
         @contextmanager
@@ -305,7 +283,12 @@ def _create_linter(klass, options):
     # `create_arguments` and other methods would be overridden by the
     # default version.
     # TODO Implement advanced mixin
-    result_klass = type(klass.__name__, (klass, LinterBase), {})
+    if options["output_format"] is None:
+        inheritance_hierarchy = (klass, LinterBase)
+    else:
+        inheritance_hierarchy = (klass, mixin, LinterBase)
+
+    result_klass = type(klass.__name__, inheritance_hierarchy, {})
     result_klass.__doc__ = klass.__doc__ if klass.__doc__ else ""
     return result_klass
 
