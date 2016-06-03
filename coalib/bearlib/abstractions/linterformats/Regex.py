@@ -4,10 +4,11 @@ from types import MappingProxyType
 from coala_decorators.decorators import assert_right_type
 
 from coalib.misc.Future import partialmethod
+from coalib.results.Result import Result
 from coalib.results.RESULT_SEVERITY import RESULT_SEVERITY
 
 
-class LinterRegexOutputFormat:
+class Regex:
     NAME = "regex" # TODO
 
     # TODO mark it as "private"?
@@ -17,7 +18,7 @@ class LinterRegexOutputFormat:
         """
         Do type-checks and other stuff here.
 
-        :return: Return -> yes the modified and prepared options
+        :return: Return -> yes the modified and prepared options / really?
         """
         if "output_regex" not in options:
             raise ValueError("`output_regex` needed when specified "
@@ -148,6 +149,62 @@ class LinterRegexOutputFormat:
                 yield self._convert_output_regex_match_to_result(
                     match, filename, severity_map=severity_map,
                     result_message=result_message)
+
+    def _convert_output_regex_match_to_result(self,
+                                              match,
+                                              filename,
+                                              severity_map,
+                                              result_message):
+        """
+        Converts the matched named-groups of ``output_regex`` to an actual
+        ``Result``.
+
+        :param match:
+            The regex match object.
+        :param filename:
+            The name of the file this match belongs to.
+        :param severity_map:
+            The dict to use to map the severity-match to an actual
+            ``RESULT_SEVERITY``.
+        :param result_message:
+            The static message to use for results instead of grabbing it from
+            the executable output via the ``message`` named regex group.
+        """
+        # Pre process the groups
+        groups = match.groupdict()
+
+        if 'severity' in groups:
+            try:
+                groups["severity"] = severity_map[groups["severity"].lower()]
+            except KeyError:
+                self.warn(
+                    repr(groups["severity"]) + " not found in severity-map. "
+                    "Assuming `RESULT_SEVERITY.NORMAL`.")
+                groups["severity"] = RESULT_SEVERITY.NORMAL
+        else:
+            groups['severity'] = RESULT_SEVERITY.NORMAL
+
+        for variable in ("line", "column", "end_line", "end_column"):
+            groups[variable] = (None
+                                if groups.get(variable, None) is None else
+                                int(groups[variable]))
+
+        if "origin" in groups:
+            groups["origin"] = "{} ({})".format(self.__name__,
+                                                groups["origin"].strip())
+
+        # Construct the result.
+        return Result.from_values(
+            origin=groups.get("origin", self),
+            message=(groups.get("message", "").strip()
+                     if result_message is None else result_message),
+            file=filename,
+            severity=groups["severity"],
+            line=groups["line"],
+            column=groups["column"],
+            end_line=groups["end_line"],
+            end_column=groups["end_column"],
+            additional_info=groups.get("additional_info", "").strip())
 
     # TODO check for proper mixin of process_output method!
 
