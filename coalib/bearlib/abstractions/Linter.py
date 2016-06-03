@@ -11,9 +11,11 @@ from coala_decorators.decorators import assert_right_type, enforce_signature
 from coalib.misc.Shell import run_shell_command
 from coalib.settings.FunctionMetadata import FunctionMetadata
 
-# TODO Import these classes into __init__
-from coalib.bearlib.abstractions.linterformats.Regex import Regex
-from coalib.bearlib.abstractions.linterformats.Corrected import Corrected
+from coalib.bearlib.abstractions.linterformats import (
+    create_regex_format_class, create_corrected_format_class
+
+
+_format_classes = (create_regex_format_class, create_corrected_format_class)
 
 
 def _prepare_options(options):
@@ -22,6 +24,8 @@ def _prepare_options(options):
 
     :param options:
         The options dict that contains user/developer inputs.
+    :return:
+        The format-class or ``None`` if no output-format was specified.
     """
     allowed_options = {"executable",
                        "output_format",
@@ -46,16 +50,22 @@ def _prepare_options(options):
 
         allowed_options.add("prerequisite_check_fail_message")
 
-    # TODO Use some kind of registration mechanism
-    if options["output_format"] == "corrected":
-        mixin = Corrected
-    elif options["output_format"] == "regex":
-        mixin = Regex
+    # The format class iterator is expected to yield three things:
+    # - The name of the format as a string.
+    # - The set of option names that got processed.
+    # - The actual format-class that handles the result processing.
+    format_class_setup_iterators = {
+        next(it): it for it in (fmt() for fmt in _format_classes)}
 
-    elif options["output_format"] is not None:
-        raise ValueError("Invalid `output_format` specified.")
+    if options["output_format"] is not None:
+        try:
+            format_class = format_class_setup_iterators[
+                options["output_format"]]
+        except KeyError:
+            raise ValueError("Invalid `output_format` specified.")
 
-    allowed_options = mixin.prepare_options()
+        # Get the option names that were processed.
+        allowed_options |= next(format_class)
 
     # Check for illegal superfluous options.
     superfluous_options = options.keys() - allowed_options
@@ -64,7 +74,10 @@ def _prepare_options(options):
             "Invalid keyword arguments provided: " +
             ", ".join(repr(s) for s in sorted(superfluous_options)))
 
-def _create_linter(klass, options):
+    return None if options["output_format"] is None else next(format_class)
+
+
+def _create_linter(klass, options, format_class):
     class LinterMeta(type):
 
         def __repr__(cls):
@@ -282,11 +295,10 @@ def _create_linter(klass, options):
     # Mixin the linter into the user-defined interface, otherwise
     # `create_arguments` and other methods would be overridden by the
     # default version.
-    # TODO Implement advanced mixin
     if options["output_format"] is None:
         inheritance_hierarchy = (klass, LinterBase)
     else:
-        inheritance_hierarchy = (klass, mixin, LinterBase)
+        inheritance_hierarchy = (klass, format_class, LinterBase)
 
     result_klass = type(klass.__name__, inheritance_hierarchy, {})
     result_klass.__doc__ = klass.__doc__ if klass.__doc__ else ""
@@ -489,6 +501,6 @@ def linter(executable: str,
     options["executable_check_fail_info"] = executable_check_fail_info
     options["prerequisite_check_command"] = prerequisite_check_command
 
-    _prepare_options(options)
-
-    return partial(_create_linter, options=options)
+    return partial(_create_linter,
+                   options=options,
+                   format_class=_prepare_options(options))
