@@ -192,7 +192,7 @@ def _create_format_class(options):
     return RegexFormatClass
 
 
-def create_regex_format_class(**options):
+def create_regex_format_class(options):
     # Yield the name of the output-format
     yield "regex"
 

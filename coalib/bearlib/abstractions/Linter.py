@@ -12,7 +12,7 @@ from coalib.misc.Shell import run_shell_command
 from coalib.settings.FunctionMetadata import FunctionMetadata
 
 from coalib.bearlib.abstractions.linterformats import (
-    create_regex_format_class, create_corrected_format_class
+    create_regex_format_class, create_corrected_format_class)
 
 
 _format_classes = (create_regex_format_class, create_corrected_format_class)
@@ -55,7 +55,7 @@ def _prepare_options(options):
     # - The set of option names that got processed.
     # - The actual format-class that handles the result processing.
     format_class_setup_iterators = {
-        next(it): it for it in (fmt() for fmt in _format_classes)}
+        next(it): it for it in (fmt(options) for fmt in _format_classes)}
 
     if options["output_format"] is not None:
         try:

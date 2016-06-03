@@ -79,7 +79,7 @@ def _create_format_class(options):
     return CorrectedFormatClass
 
 
-def create_corrected_format_class(**options):
+def create_corrected_format_class(options):
     # Yield the name of the output-format
     yield "corrected"
 
