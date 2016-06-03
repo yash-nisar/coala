@@ -62,15 +62,7 @@ class Regex:
         if "result_message" in options:
             assert_right_type(options["result_message"], str, "result_message")
 
-        # Check for illegal superfluous options.
-        allowed_options = {"output_regex", "severity_map", "result_message"}
-        superfluous_options = options.keys() - allowed_options
-        if superfluous_options:
-            raise ValueError(
-                "Invalid keyword arguments provided: " +
-                ", ".join(repr(s) for s in sorted(superfluous_options)))
-
-        return options
+        return {"output_regex", "severity_map", "result_message"}
 
     @classmethod
     def set_up(cls, **options):

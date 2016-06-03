@@ -11,8 +11,9 @@ class Corrected:
 
     # TODO mark it as "private"?
     # TODO make a setup function only?
+    # TODO Dit sucks
     @staticmethod
-    def prepare_options(**options):
+    def set_up(**options):
         # TODO Docs
         """
         Do type-checks and other stuff here.
@@ -31,16 +32,8 @@ class Corrected:
         if "diff_distance" in options:
             assert_right_type(options["diff_distance"], int, "diff_distance")
 
-        # TODO duplication?
-        # Check for illegal superfluous options.
-        allowed_options = {"diff_severity", "result_message", "diff_distance"}
-        superfluous_options = options.keys() - allowed_options
-        if superfluous_options:
-            raise ValueError(
-                "Invalid keyword arguments provided: " +
-                ", ".join(repr(s) for s in sorted(superfluous_options)))
-
-        return options
+        # TODO DOcument that processed options shall be returned
+        return {"diff_severity", "result_message", "diff_distance"}
 
     @classmethod
     def set_up(cls, **options):

@@ -8,11 +8,7 @@ from subprocess import check_call, CalledProcessError, DEVNULL
 from coalib.bears.LocalBear import LocalBear
 from coalib.misc.ContextManagers import make_temp
 from coala_decorators.decorators import assert_right_type, enforce_signature
-from coalib.misc.Future import partialmethod
 from coalib.misc.Shell import run_shell_command
-from coalib.results.Diff import Diff
-from coalib.results.Result import Result
-from coalib.results.RESULT_SEVERITY import RESULT_SEVERITY
 from coalib.settings.FunctionMetadata import FunctionMetadata
 
 # TODO Import these classes into __init__
@@ -59,10 +55,14 @@ def _prepare_options(options):
     elif options["output_format"] is not None:
         raise ValueError("Invalid `output_format` specified.")
 
-    mixin.prepare_options()
+    allowed_options = mixin.prepare_options()
 
-    # TODO NOTE Superfluos check is done inside each format implementation
-
+    # Check for illegal superfluous options.
+    superfluous_options = options.keys() - allowed_options
+    if superfluous_options:
+        raise ValueError(
+            "Invalid keyword arguments provided: " +
+            ", ".join(repr(s) for s in sorted(superfluous_options)))
 
 def _create_linter(klass, options):
     class LinterMeta(type):
