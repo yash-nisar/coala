@@ -296,7 +296,7 @@ def _create_linter(klass, options, format_class):
     # `create_arguments` and other methods would be overridden by the
     # default version.
     if options["output_format"] is None:
-        inheritance_hierarchy = (klass, LinterBase)
+        inheritance_hierarchy = (klass,) +  + (LinterBase,)
     else:
         inheritance_hierarchy = (klass, format_class, LinterBase)
 
