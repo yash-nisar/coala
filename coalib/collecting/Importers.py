@@ -143,6 +143,8 @@ def iimport_objects(file_paths, names=None, types=None, supers=None,
     :param attributes: Attribute(s) an object needs to (all) have
     :param local:      if True: Objects need to be defined in the file they
                        appear in to be collected
+    :param verbose:    Whether verbose logs shall be displayed on console or
+                       not.
     :return:           iterator that yields all matching python objects
     :raises Exception: Any exception that is thrown in module code or an
                        ImportError if paths are erroneous.
