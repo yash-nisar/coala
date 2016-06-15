@@ -1,35 +1,49 @@
 from contextlib import ExitStack
+from importlib import import_module
 import inspect
 import os
 import platform
 import sys
 
-from coalib.misc.Future import list_dir_contents
 from coalib.misc.ContextManagers import suppress_stdout
-from coala_decorators.decorators import arguments_to_lists, yield_once
+from coala_decorators.decorators import _to_list, yield_once
 
 
-def _import_module(file_path):
+def _windows_get_case_sensitive_filename(path):
+    basepath, lastname = os.path.split(os.path.realpath(path))
+
+    if basepath[1] == ":" and lastname == "":
+        # Found a drive letter only, end of path reached.
+        return basepath[0].upper() + basepath[1:]
+
+    lastname_lowered = lastname.lower()
+
+    for element in os.listdir(basepath):
+        if element.lower() == lastname_lowered:
+            return os.path.join(_windows_get_case_sensitive_filename(basepath),
+                                element)
+
+    raise FileNotFoundError
+
+
+def _import_module(file_path, base_path):
     if not os.path.exists(file_path):
         raise ImportError
 
-    module_name = os.path.splitext(os.path.basename(file_path))[0]
-    module_dir = os.path.dirname(file_path)
-
-    if module_dir not in sys.path:
-        sys.path.insert(0, module_dir)
+    if base_path not in sys.path:
+        sys.path.append(base_path)
 
     # Ugly inconsistency: Python will insist on correctly cased module names
     # independent of whether the OS is case-sensitive or not.
     # We want all cases to match though.
     if platform.system() == 'Windows':  # pragma: nocover
-        for cased_file_path in list_dir_contents(module_dir):
-            cased_module_name = os.path.splitext(cased_file_path)[0]
-            if cased_module_name.lower() == module_name.lower():
-                module_name = cased_module_name
-                break
+        file_path = _windows_get_case_sensitive_filename(file_path)
 
-    return __import__(module_name)
+    module_path_without_extension = os.path.splitext(file_path)[0]
+
+    import_fullname = os.path.relpath(
+        module_path_without_extension, base_path).replace(os.path.sep, ".")
+    return import_module(import_fullname)
 
 
 def _is_subclass(test_class, superclasses):
@@ -96,13 +110,13 @@ def _is_defined_in(obj, file_path):
     return False
 
 
-@arguments_to_lists
 @yield_once
 def _iimport_objects(file_paths, names, types, supers, attributes, local):
     """
     Import all objects from the given modules that fulfill the requirements
 
-    :param file_paths: File path(s) from which objects will be imported
+    :param file_paths: dict of file paths and their base import paths from
+                       which objects will be imported.
     :param names:      Name(s) an objects need to have one of
     :param types:      Type(s) an objects need to be out of
     :param supers:     Class(es) objects need to be a subclass of
@@ -113,11 +127,17 @@ def _iimport_objects(file_paths, names, types, supers, attributes, local):
     :raises Exception: Any exception that is thrown in module code or an
                        ImportError if paths are erroneous.
     """
+    names = _to_list(names)
+    types = _to_list(types)
+    supers = _to_list(supers)
+    attributes = _to_list(attributes)
+    local = _to_list(local)
+
     if not (file_paths and (names or types or supers or attributes)):
         return
 
-    for file_path in file_paths:
-        module = _import_module(file_path)
+    for file_path, base_path in file_paths.items():
+        module = _import_module(file_path, base_path)
         for obj_name, obj in inspect.getmembers(module):
             if ((not names or obj_name in names) and
                     (not types or isinstance(obj, tuple(types))) and
@@ -132,7 +152,8 @@ def iimport_objects(file_paths, names=None, types=None, supers=None,
     """
     Import all objects from the given modules that fulfill the requirements
 
-    :param file_paths: File path(s) from which objects will be imported
+    :param file_paths: dict of file paths and their base import paths from
+                       which objects will be imported.
     :param names:      Name(s) an objects need to have one of
     :param types:      Type(s) an objects need to be out of
     :param supers:     Class(es) objects need to be a subclass of
