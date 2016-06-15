@@ -1,3 +1,4 @@
+from contextlib import ExitStack
 import inspect
 import os
 import platform
@@ -145,12 +146,10 @@ def iimport_objects(file_paths, names=None, types=None, supers=None,
     :raises Exception: Any exception that is thrown in module code or an
                        ImportError if paths are erroneous.
     """
-    if not verbose:
-        with suppress_stdout():
-            for obj in _iimport_objects(file_paths, names, types, supers,
-                                        attributes, local):
-                yield obj
-    else:
+    with ExitStack() as stack:
+        if verbose:
+            stack.enter_context(suppress_stdout())
+
         for obj in _iimport_objects(file_paths, names, types, supers,
                                     attributes, local):
             yield obj
