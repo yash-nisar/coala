@@ -2,7 +2,6 @@ import functools
 import os
 import pkg_resources
 import itertools
-from pyprint.NullPrinter import NullPrinter
 
 from coalib.bears.BEAR_KIND import BEAR_KIND
 from coalib.collecting.Importers import iimport_objects
@@ -10,6 +9,8 @@ from coala_decorators.decorators import yield_once
 from coalib.output.printers.LOG_LEVEL import LOG_LEVEL
 from coalib.parsing.Globbing import fnmatch, iglob, glob_escape
 from coalib.output.printers.LogPrinter import LogPrinter
+
+from pyprint.NullPrinter import NullPrinter
 
 
 def _get_kind(bear_class):
