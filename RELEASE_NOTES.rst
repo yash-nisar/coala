@@ -1,3 +1,23 @@
+coala 0.7.0 - XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+=================================================
+
+New features:
+- Command-line auto-completion!
+  (https://github.com/coala-analyzer/coala/issues/302)
+- Small patches (if available) are shown automatically when running coala.
+  (https://github.com/coala-analyzer/coala/issues/2008)
+- ``--show-language-bears``
+
+Bugfixes:
+- Bears using ``@linter`` sometimes printed arguments to the help which should
+  not appear. (https://github.com/coala-analyzer/coala/issues/2102)
+
+For bear writers:
+-
+
+Notable internal API changes:
+-
+
 coala 0.6.0 - honeybadger
 =========================
 
