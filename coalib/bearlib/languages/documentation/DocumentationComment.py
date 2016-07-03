@@ -141,3 +141,16 @@ class DocumentationComment:
                 parsed.append(self.Description(desc=desc))
 
         return parsed
+
+    def assemble(self):
+        """
+        Assembles a list of parsed documentation comments.
+
+        This function assembles the whole documentation comment,
+        with the given markers and indentation.
+        """
+        lines = self.documentation.splitlines(keepends=True)
+        assembled = self.indent + self.marker[0]
+        assembled += ''.join('\n' if line == '\n' else self.indent +
+                             self.marker[1] + line for line in lines)
+        return assembled + self.indent + self.marker[2]
