@@ -1,5 +1,7 @@
 import functools
 import os
+from importlib import find_loader
+
 import pkg_resources
 import itertools
 
@@ -253,13 +255,9 @@ def collect_registered_bears_dirs(entrypoint):
     :param entrypoint: The entrypoint to find packages with.
     :return:           List of bear directories.
     """
-    collected_dirs = []
-    for ep in pkg_resources.iter_entry_points(entrypoint):
-        registered_package = None
-        try:
-            registered_package = ep.load()
-        except pkg_resources.DistributionNotFound:
-            continue
-        collected_dirs.append(os.path.abspath(
-            os.path.dirname(registered_package.__file__)))
-    return collected_dirs
+    eps = {find_loader(ep.name)
+           for ep in pkg_resources.iter_entry_points(entrypoint)
+           if ep}
+    return [elem.path
+            for elem in eps
+            if elem]
